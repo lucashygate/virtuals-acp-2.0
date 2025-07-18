@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETH Transfer Semantic Drift Testing - Live Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0F172A;
+            color: #E5E7EB;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Terminal Hero Section */
+        .terminal-hero {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(212, 175, 55, 0.03) 2px, rgba(212, 175, 55, 0.03) 4px);
+            pointer-events: none;
+        }
+
+        .terminal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .terminal-title {
+            font-size: 1.5rem;
+            color: #D4AF37;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .status-indicator {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22C55E;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .terminal-content {
+            display: grid;
+            grid-template-columns: 300px 400px 1fr;
+            gap: 2px;
+            height: calc(100vh - 200px);
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Prompts Column */
+        .prompts-column {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .column-header {
+            font-size: 0.9rem;
+            color: #D4AF37;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .prompts-scroll {
+            height: calc(100% - 40px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .prompts-list {
+            animation: scrollPrompts 60s linear infinite;
+        }
+
+        @keyframes scrollPrompts {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .prompt-group {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .prompt-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 3px solid #D4AF37;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-item.active {
+            opacity: 1;
+            background: rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Live Test Column */
+        .test-column {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 3px solid #D4AF37;
+        }
+
+        .chat-message.agent {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 3px solid #22C55E;
+        }
+
+        .chat-message.agent.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #EF4444;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: #D4AF37;
+        }
+
+        .typing-indicator::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Results Column */
+        .results-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+        }
+
+        .success-column, .failure-column {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            overflow: hidden;
+            max-height: calc(100vh - 240px);
+            position: relative;
+        }
+
+        .success-column .column-header {
+            color: #22C55E;
+        }
+
+        .failure-column .column-header {
+            color: #EF4444;
+        }
+
+        .column-tally {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-left: 10px;
+        }
+
+        .results-scroll {
+            height: calc(100% - 40px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .results-list {
+            transition: transform 0.5s ease;
+        }
+
+        .result-item {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            animation: slideIn 0.5s ease;
+            border: 1px solid transparent;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+
+        .result-item.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .result-item.failure {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .result-prompt {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .result-response {
+            font-size: 0.8rem;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .failure-reason {
+            font-size: 0.75rem;
+            color: #F87171;
+            font-style: italic;
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 3px;
+        }
+
+        .error-highlight {
+            color: #EF4444;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.9);
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #D4AF37;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 100;
+        }
+
+        .control-button {
+            background: #D4AF37;
+            color: #0F172A;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover {
+            background: #F59E0B;
+            transform: scale(1.05);
+        }
+
+        .control-button:disabled {
+            background: #6B7280;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .wallet-info {
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .terminal-content {
+                grid-template-columns: 250px 350px 1fr;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .terminal-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+            }
+            
+            .prompts-column {
+                height: 200px;
+            }
+            
+            .test-column {
+                height: 300px;
+            }
+            
+            .results-column {
+                height: 400px;
+            }
+        }
+
+        .generate-prompts-btn {
+            background: #8B5CF6;
+            margin-bottom: 10px;
+        }
+
+        .generate-prompts-btn:hover {
+            background: #7C3AED;
+        }
+    </style>
+</head>
+<body>
+    <!-- Terminal Hero Section -->
+    <div class="terminal-hero">
+        <div class="terminal-header">
+            <div class="terminal-title">ETH Transfer Semantic Drift Testing v1.0</div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>LIVE BLOCKCHAIN TESTING</span>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="wallet-info" id="walletInfo">
+                Wallet: Not Connected
+            </div>
+            <button class="control-button" id="connectWallet">Connect Wallet</button>
+            <button class="control-button generate-prompts-btn" id="generatePrompts" disabled>Generate Test Prompts</button>
+            <button class="control-button" id="startTest" disabled>Start Testing</button>
+            <button class="control-button" id="pauseTest" disabled>Pause</button>
+        </div>
+
+        <div class="terminal-content">
+            <!-- Prompts Column -->
+            <div class="prompts-column">
+                <div class="column-header">Test Prompts Queue</div>
+                <div class="prompts-scroll">
+                    <div class="prompts-list" id="promptsList"></div>
+                </div>
+            </div>
+
+            <!-- Live Test Column -->
+            <div class="test-column">
+                <div class="column-header">Live Blockchain Test</div>
+                <div class="chat-container" id="chatContainer"></div>
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">Processing transaction</div>
+            </div>
+
+            <!-- Results Column -->
+            <div class="results-column">
+                <div class="success-column">
+                    <div class="column-header">✓ Successful Transactions <span class="column-tally" id="successTally">(0)</span></div>
+                    <div class="results-scroll">
+                        <div class="results-list" id="successResults"></div>
+                    </div>
+                </div>
+                <div class="failure-column">
+                    <div class="column-header">✗ Failed Validations <span class="column-tally" id="failureTally">(0)</span></div>
+                    <div class="results-scroll">
+                        <div class="results-list" id="failureResults"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalTests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalEthBurned">0</div>
+                <div class="stat-label">ETH Burned</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avgResponseTime">0ms</div>
+                <div class="stat-label">Avg Response Time</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let isConnected = false;
+        let walletAddress = null;
+        let isRunning = false;
+        let isPaused = false;
+        let currentPromptIndex = 0;
+        let testResults = { success: 0, failure: 0 };
+        let totalEthBurned = 0;
+        let responseTimes = [];
+        let promptsList = [];
+
+        // Default test prompts - will be replaced by generated ones
+        const defaultPrompts = [
+            "send 0.0001 ETH to 0x0000000000000000000000000000000000000001",
+            "transfer 0.0001 ETH to 0x0000000000000000000000000000000000000001",
+            "please send 0.0001 ETH to 0x0000000000000000000000000000000000000001"
+        ];
+
+        // Initialize
+        async function init() {
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                checkConnection();
+            } else {
+                alert('Please install MetaMask to use this demo');
+            }
+
+            // Set up event listeners
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('generatePrompts').addEventListener('click', generateTestPrompts);
+            document.getElementById('startTest').addEventListener('click', startTesting);
+            document.getElementById('pauseTest').addEventListener('click', pauseTesting);
+
+            // Initialize with default prompts
+            displayPrompts(defaultPrompts);
+        }
+
+        // Check if wallet is already connected
+        async function checkConnection() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    handleConnected(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Error checking connection:', error);
+            }
+        }
+
+        // Connect wallet
+        async function connectWallet() {
+            try {
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                if (accounts.length > 0) {
+                    // Switch to Base Sepolia
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x14A34' }], // 84532 in hex
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x14A34',
+                                    chainName: 'Base Sepolia',
+                                    nativeCurrency: {
+                                        name: 'ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://sepolia.base.org'],
+                                    blockExplorerUrls: ['https://sepolia.basescan.org']
+                                }],
+                            });
+                        }
+                    }
+                    
+                    handleConnected(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                alert('Failed to connect wallet. Please try again.');
+            }
+        }
+
+        // Handle successful connection
+        function handleConnected(address) {
+            isConnected = true;
+            walletAddress = address;
+            document.getElementById('walletInfo').textContent = 
+                `Wallet: ${address.slice(0, 6)}...${address.slice(-4)} (Base Sepolia)`;
+            document.getElementById('connectWallet').textContent = 'Connected';
+            document.getElementById('connectWallet').disabled = true;
+            document.getElementById('generatePrompts').disabled = false;
+            document.getElementById('startTest').disabled = false;
+        }
+
+        // Generate test prompts using API
+        async function generateTestPrompts() {
+            const btn = document.getElementById('generatePrompts');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            try {
+                const response = await fetch('/api/generate-prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate prompts');
+                }
+
+                const data = await response.json();
+                promptsList = data.prompts;
+                displayPrompts(promptsList);
+                
+                addChatMessage('Generated ' + promptsList.length + ' test prompts in multiple languages and styles', 'agent');
+            } catch (error) {
+                console.error('Error generating prompts:', error);
+                // Fall back to more varied default prompts
+                promptsList = [
+                    ...defaultPrompts,
+                    "enviar 0.0001 ETH a 0x0000000000000000000000000000000000000001",
+                    "envoyer 0,0001 ETH à 0x0000000000000000000000000000000000000001",
+                    "发送0.0001 ETH到0x0000000000000000000000000000000000000001",
+                    "0.0001 ETH を 0x0000000000000000000000000000000000000001 に送信",
+                    "yo fam shoot 0.0001 eth to that burn addy 0x0000000000000000000000000000000000000001",
+                    "send 1 ETH to 0x0000000000000000000000000000000000000001", // Wrong amount
+                    "send 0.0001 BTC to 0x0000000000000000000000000000000000000001", // Wrong token
+                ];
+                displayPrompts(promptsList);
+                addChatMessage('Using default multilingual test prompts', 'agent');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Generate Test Prompts';
+        }
+
+        // Display prompts in the UI
+        function displayPrompts(prompts) {
+            const promptsListEl = document.getElementById('promptsList');
+            promptsListEl.innerHTML = '';
+
+            // Create prompt groups
+            const groupSize = 3;
+            for (let i = 0; i < prompts.length; i += groupSize) {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'prompt-group';
+                
+                for (let j = i; j < Math.min(i + groupSize, prompts.length); j++) {
+                    const promptEl = document.createElement('div');
+                    promptEl.className = 'prompt-item';
+                    promptEl.textContent = prompts[j];
+                    promptEl.dataset.index = j;
+                    groupEl.appendChild(promptEl);
+                }
+                
+                promptsListEl.appendChild(groupEl);
+            }
+
+            // Duplicate for seamless scrolling
+            promptsListEl.innerHTML += promptsListEl.innerHTML;
+        }
+
+        // Start testing
+        function startTesting() {
+            if (!isConnected) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            isRunning = true;
+            isPaused = false;
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('pauseTest').disabled = false;
+            
+            runNextTest();
+        }
+
+        // Pause testing
+        function pauseTesting() {
+            isPaused = true;
+            document.getElementById('pauseTest').disabled = true;
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('startTest').textContent = 'Resume';
+        }
+
+        // Run next test
+        async function runNextTest() {
+            if (!isRunning || isPaused) return;
+
+            const prompt = promptsList[currentPromptIndex % promptsList.length];
+            const promptElements = document.querySelectorAll(`[data-index="${currentPromptIndex % promptsList.length}"]`);
+            promptElements.forEach(el => el.classList.add('active'));
+
+            // Add user message
+            addChatMessage(prompt, 'user');
+
+            // Show typing indicator
+            document.getElementById('typingIndicator').style.display = 'block';
+
+            const startTime = Date.now();
+
+            try {
+                // Call parse API
+                const parseResponse = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ promptText: prompt })
+                });
+
+                const responseTime = Date.now() - startTime;
+                responseTimes.push(responseTime);
+
+                document.getElementById('typingIndicator').style.display = 'none';
+
+                if (!parseResponse.ok) {
+                    const error = await parseResponse.json();
+                    throw new Error(error.error || 'Invalid prompt format');
+                }
+
+                const transaction = await parseResponse.json();
+                
+                // Generate confirmation message
+                const confirmResponse = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        promptText: `Confirm: sending ${transaction.value} wei to ${transaction.to}`,
+                        generateConfirmation: true 
+                    })
+                });
+
+                const confirmation = await confirmResponse.json();
+                addChatMessage(confirmation.message || 'Proceeding with transaction...', 'agent');
+
+                // Send actual transaction
+                const txParams = {
+                    from: walletAddress,
+                    to: transaction.to,
+                    value: transaction.value,
+                    gas: transaction.gas,
+                    chainId: transaction.chainId,
+                };
+
+                const txHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [txParams],
+                });
+
+                // Success!
+                const successMsg = `Transaction successful! Hash: ${txHash.slice(0, 10)}...`;
+                addChatMessage(successMsg, 'agent');
+                addResult(prompt, successMsg, 'success', '', '', txHash);
+                testResults.success++;
+                totalEthBurned += 0.0001;
+
+            } catch (error) {
+                // Failure
+                const errorMsg = error.message || 'Transaction failed';
+                addChatMessage(errorMsg, 'agent error');
+                addResult(prompt, errorMsg, 'failure', errorMsg, 'validation-error');
+                testResults.failure++;
+            }
+
+            // Update stats
+            updateStats();
+
+            // Remove active state
+            setTimeout(() => {
+                promptElements.forEach(el => el.classList.remove('active'));
+            }, 500);
+
+            // Move to next prompt
+            currentPromptIndex++;
+
+            // Continue testing after delay
+            if (isRunning && !isPaused) {
+                setTimeout(runNextTest, 3000);
+            }
+        }
+
+        // Add chat message
+        function addChatMessage(message, type) {
+            const chatContainer = document.getElementById('chatContainer');
+            
+            if (type === 'user') {
+                chatContainer.innerHTML = '';
+            }
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            const prefix = type.includes('user') ? '> User: ' : '> Agent: ';
+            messageEl.textContent = prefix + message;
+            
+            chatContainer.appendChild(messageEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Add result
+        function addResult(prompt, response, type, failureReason = '', errorType = '', txHash = '') {
+            const container = type === 'success' ? 
+                document.getElementById('successResults') : 
+                document.getElementById('failureResults');
+            
+            const resultEl = document.createElement('div');
+            resultEl.className = `result-item ${type}`;
+            
+            const promptEl = document.createElement('div');
+            promptEl.className = 'result-prompt';
+            promptEl.textContent = prompt;
+            
+            const responseEl = document.createElement('div');
+            responseEl.className = 'result-response';
+            
+            if (type === 'success' && txHash) {
+                responseEl.innerHTML = `${response} <a href="https://sepolia.basescan.org/tx/${txHash}" target="_blank" style="color: #D4AF37;">View on Explorer</a>`;
+            } else {
+                responseEl.textContent = response;
+            }
+            
+            resultEl.appendChild(promptEl);
+            resultEl.appendChild(responseEl);
+            
+            if (type === 'failure' && failureReason) {
+                const reasonEl = document.createElement('div');
+                reasonEl.className = 'failure-reason';
+                reasonEl.innerHTML = `⚠️ Error: <span class="error-highlight">${failureReason}</span>`;
+                resultEl.appendChild(reasonEl);
+            }
+            
+            container.appendChild(resultEl);
+            
+            // Update tallies
+            updateTallies();
+            
+            // Auto-scroll
+            setTimeout(() => {
+                autoScrollResults(container);
+            }, 50);
+        }
+
+        // Update tallies
+        function updateTallies() {
+            const successCount = document.getElementById('successResults').children.length;
+            const failureCount = document.getElementById('failureResults').children.length;
+            
+            document.getElementById('successTally').textContent = `(${successCount})`;
+            document.getElementById('failureTally').textContent = `(${failureCount})`;
+        }
+
+        // Auto-scroll results
+        function autoScrollResults(container) {
+            const scrollParent = container.parentElement;
+            const containerHeight = scrollParent.offsetHeight;
+            
+            while (container.children.length > 10) {
+                container.removeChild(container.firstChild);
+            }
+            
+            const contentHeight = container.scrollHeight;
+            
+            if (contentHeight > containerHeight) {
+                const scrollAmount = contentHeight - containerHeight;
+                container.style.transform = `translateY(-${scrollAmount}px)`;
+            } else {
+                container.style.transform = 'translateY(0)';
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const total = testResults.success + testResults.failure;
+            const successRate = total > 0 ? Math.round((testResults.success / total) * 100) : 0;
+            
+            document.getElementById('totalTests').textContent = total;
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('totalEthBurned').textContent = totalEthBurned.toFixed(4);
+            
+            const avgResponseTime = responseTimes.length > 0 ? 
+                Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) : 0;
+            document.getElementById('avgResponseTime').textContent = avgResponseTime + 'ms';
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAS Transfer Semantic Drift Testing - Polkadot Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0F0617;
+            color: #E5E7EB;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Main Layout */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: rgba(15, 6, 23, 0.95);
+            border-bottom: 1px solid rgba(230, 0, 122, 0.3);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #E6007A;
+            text-shadow: 0 0 10px rgba(230, 0, 122, 0.3);
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .wallet-info {
+            padding: 0.5rem 1rem;
+            background: rgba(230, 0, 122, 0.1);
+            border: 1px solid rgba(230, 0, 122, 0.3);
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            height: 100%;
+            min-height: 600px;
+        }
+
+        /* Left Panel - Controls and Queue */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-section {
+            background: rgba(30, 20, 40, 0.6);
+            border: 1px solid rgba(230, 0, 122, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #E6007A;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .button {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            background: #E6007A;
+            color: #0F0617;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.75rem;
+        }
+
+        .button:hover:not(:disabled) {
+            background: #FF0090;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(230, 0, 122, 0.3);
+        }
+
+        .button:disabled {
+            background: #4B5563;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.secondary {
+            background: #6D28D9;
+        }
+
+        .button.secondary:hover:not(:disabled) {
+            background: #7C3AED;
+        }
+
+        /* Test Queue */
+        .queue-section {
+            background: rgba(30, 20, 40, 0.6);
+            border: 1px solid rgba(230, 0, 122, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prompt-queue {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .prompt-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(15, 6, 23, 0.6);
+            border-left: 3px solid #6B7280;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-item.active {
+            border-left-color: #E6007A;
+            background: rgba(230, 0, 122, 0.1);
+            box-shadow: 0 0 10px rgba(230, 0, 122, 0.2);
+        }
+
+        .prompt-item.success {
+            border-left-color: #10B981;
+            opacity: 0.7;
+        }
+
+        .prompt-item.failure {
+            border-left-color: #EF4444;
+            opacity: 0.7;
+        }
+
+        /* Right Panel - Main Testing Area */
+        .right-panel {
+            display: grid;
+            grid-template-rows: 1fr 300px;
+            gap: 2rem;
+        }
+
+        /* Agent Conversation */
+        .conversation-section {
+            background: rgba(30, 20, 40, 0.6);
+            border: 1px solid rgba(230, 0, 122, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(15, 6, 23, 0.4);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            background: rgba(230, 0, 122, 0.15);
+            border-left: 3px solid #E6007A;
+            margin-right: 20%;
+        }
+
+        .chat-message.agent {
+            background: rgba(109, 40, 217, 0.15);
+            border-left: 3px solid #6D28D9;
+            margin-left: 20%;
+            color: #E5E7EB;
+        }
+
+        .chat-message.system {
+            background: rgba(107, 114, 128, 0.15);
+            border-left: 3px solid #6B7280;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .message-label {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(109, 40, 217, 0.15);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            color: #6D28D9;
+        }
+
+        .typing-indicator::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Transaction Log */
+        .transaction-log {
+            background: rgba(30, 20, 40, 0.6);
+            border: 1px solid rgba(230, 0, 122, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(15, 6, 23, 0.6);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .log-entry.success {
+            border-left: 3px solid #10B981;
+        }
+
+        .log-entry.failure {
+            border-left: 3px solid #EF4444;
+        }
+
+        .log-timestamp {
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .log-details {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .log-label {
+            color: #9CA3AF;
+            font-weight: 600;
+        }
+
+        .log-value {
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .log-value a {
+            color: #E6007A;
+            text-decoration: none;
+        }
+
+        .log-value a:hover {
+            text-decoration: underline;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: rgba(15, 6, 23, 0.95);
+            border-top: 1px solid rgba(230, 0, 122, 0.3);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stats-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #E6007A;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                height: auto;
+            }
+
+            .left-panel {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .queue-section {
+                grid-column: span 2;
+                max-height: 200px;
+            }
+            
+            .right-panel {
+                grid-template-rows: minmax(400px, 1fr) minmax(200px, 300px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">PAS Transfer Semantic Drift Testing - Polkadot</h1>
+                <div class="wallet-section">
+                    <div class="wallet-info" id="walletInfo">
+                        Wallet: Not Connected
+                    </div>
+                    <button class="button" id="connectWallet">Connect Wallet</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-grid">
+                <!-- Left Panel -->
+                <aside class="left-panel">
+                    <!-- Controls -->
+                    <div class="control-section">
+                        <h2 class="section-title">Test Controls</h2>
+                        <button class="button secondary" id="generatePrompts" disabled>
+                            Generate Test Prompts
+                        </button>
+                        <button class="button secondary" id="refreshPrompts" disabled style="display: none;">
+                            Refresh Prompts
+                        </button>
+                        <button class="button" id="startTest" disabled>
+                            Start Testing
+                        </button>
+                        <button class="button" id="pauseTest" disabled>
+                            Pause Testing
+                        </button>
+                        <div style="margin-top: 1rem;">
+                            <input type="text" 
+                                   id="customPrompt" 
+                                   placeholder="Add custom prompt..." 
+                                   style="width: 100%; padding: 0.5rem; background: rgba(15, 6, 23, 0.6); border: 1px solid rgba(230, 0, 122, 0.2); border-radius: 0.25rem; color: #E5E7EB; margin-bottom: 0.5rem;"
+                                   disabled>
+                            <button class="button secondary" id="addCustomPrompt" disabled style="width: 100%;">
+                                Add Custom Prompt
+                            </button>
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.9rem; color: #9CA3AF;">
+                            <p>Testing: <span id="testingStatus">Not Started</span></p>
+                            <p>Speed: <span id="testSpeed">3s per test</span></p>
+                            <p>Prompts: <span id="promptCount">0</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Test Queue -->
+                    <div class="queue-section">
+                        <h2 class="section-title">Test Queue</h2>
+                        <div class="prompt-queue" id="promptQueue">
+                            <!-- Prompts will be added here -->
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right Panel -->
+                <div class="right-panel">
+                    <!-- Agent Conversation -->
+                    <div class="conversation-section">
+                        <h2 class="section-title">Agent Conversation</h2>
+                        <div class="chat-container" id="chatContainer">
+                            <div class="chat-message system">
+                                <div class="message-label">System</div>
+                                Connect your wallet to begin testing natural language transaction requests.
+                            </div>
+                        </div>
+                        <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                            Agent is thinking
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <input type="text" 
+                                   id="manualChatInput" 
+                                   placeholder="Type a message..." 
+                                   style="flex: 1; padding: 0.75rem; background: rgba(15, 6, 23, 0.6); border: 1px solid rgba(230, 0, 122, 0.3); border-radius: 0.5rem; color: #E5E7EB;"
+                                   disabled>
+                            <button class="button" id="sendManualChat" style="width: auto;" disabled>Send</button>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Log -->
+                    <div class="transaction-log">
+                        <h2 class="section-title">Transaction Log</h2>
+                        <div id="transactionLog">
+                            <!-- Log entries will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Stats Bar -->
+        <footer class="stats-bar">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successCount">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="failureCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successRate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalPasBurned">0</div>
+                    <div class="stat-label">PAS Burned</div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Global state
+        let isConnected = false;
+        let walletAddress = null;
+        let isRunning = false;
+        let isPaused = false;
+        let currentPromptIndex = 0;
+        let testStats = { total: 0, success: 0, failure: 0 };
+        let totalPasBurned = 0;
+        let promptsList = [];
+
+        // Polkadot Hub TestNet configuration
+        const POLKADOT_TESTNET = {
+            chainId: '0x190F3B46',  // 420420422 in hex
+            chainName: 'Polkadot Hub TestNet',
+            nativeCurrency: {
+                name: 'PAS',
+                symbol: 'PAS',
+                decimals: 18
+            },
+            rpcUrls: ['https://testnet-passet-hub-eth-rpc.polkadot.io'],
+            blockExplorerUrls: ['https://blockscout-passet-hub.parity-testnet.parity.io/']
+        };
+
+        // Initialize
+        async function init() {
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                checkConnection();
+            } else {
+                addSystemMessage('MetaMask not detected. Please install MetaMask to use this demo.');
+            }
+
+            // Set up event listeners
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('generatePrompts').addEventListener('click', generateTestPrompts);
+            document.getElementById('refreshPrompts').addEventListener('click', generateTestPrompts);
+            document.getElementById('startTest').addEventListener('click', startTesting);
+            document.getElementById('pauseTest').addEventListener('click', pauseTesting);
+            document.getElementById('addCustomPrompt').addEventListener('click', addCustomPrompt);
+            
+            // Test message display on load (remove after testing)
+            setTimeout(() => {
+                console.log('Testing message display...');
+                addChatMessage('This is a test agent message', 'agent', 'Test Agent');
+                addSystemMessage('If you can see the agent message above, display is working.');
+            }, 2000);
+            
+            // Enable enter key for custom prompt input
+            document.getElementById('customPrompt').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addCustomPrompt();
+                }
+            });
+            
+            // Manual chat functionality
+            document.getElementById('sendManualChat').addEventListener('click', sendManualChat);
+            document.getElementById('manualChatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendManualChat();
+                }
+            });
+        }
+
+        // Check if wallet is already connected
+        async function checkConnection() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    handleConnected(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Error checking connection:', error);
+            }
+        }
+
+        // Connect wallet
+        async function connectWallet() {
+            try {
+                            const accounts = await window.ethereum.request({ 
+                method: 'eth_requestAccounts' 
+            });
+            
+            if (accounts.length > 0) {
+                // Switch to Polkadot Hub TestNet
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: POLKADOT_TESTNET.chainId }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [POLKADOT_TESTNET],
+                            });
+                        } catch (addError) {
+                            console.error('Failed to add network:', addError);
+                            addSystemMessage('Failed to add Polkadot Hub TestNet. Please add it manually with these details:');
+                            addSystemMessage(`Chain ID: ${parseInt(POLKADOT_TESTNET.chainId, 16)}`);
+                            addSystemMessage(`RPC URL: ${POLKADOT_TESTNET.rpcUrls[0]}`);
+                            addSystemMessage(`Symbol: PAS`);
+                            return;
+                        }
+                    } else {
+                        throw switchError;
+                    }
+                }
+                
+                // Verify we're on the correct network
+                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                console.log('Current chain ID:', currentChainId, 'Expected:', POLKADOT_TESTNET.chainId);
+                
+                if (currentChainId.toLowerCase() !== POLKADOT_TESTNET.chainId.toLowerCase()) {
+                    addSystemMessage('Warning: Not connected to Polkadot Hub TestNet. Please switch networks.');
+                    return;
+                }
+                
+                handleConnected(accounts[0]);
+            }
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                addSystemMessage('Failed to connect wallet. Please try again.');
+            }
+        }
+
+        // Handle successful connection
+        async function handleConnected(address) {
+            isConnected = true;
+            walletAddress = address;
+            document.getElementById('walletInfo').textContent = 
+                `Wallet: ${address.slice(0, 6)}...${address.slice(-4)} (Polkadot TestNet)`;
+            document.getElementById('connectWallet').textContent = 'Connected';
+            document.getElementById('connectWallet').disabled = true;
+            document.getElementById('generatePrompts').disabled = false;
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('customPrompt').disabled = false;
+            document.getElementById('addCustomPrompt').disabled = false;
+            document.getElementById('manualChatInput').disabled = false;
+            document.getElementById('sendManualChat').disabled = false;
+            
+            addSystemMessage('Wallet connected successfully! You can now generate test prompts or chat with the agent directly.');
+            
+            // Check network connectivity
+            try {
+                const blockNumber = await window.ethereum.request({
+                    method: 'eth_blockNumber',
+                    params: []
+                });
+                console.log('Connected to Polkadot Hub TestNet, latest block:', parseInt(blockNumber, 16));
+            } catch (networkError) {
+                console.error('Network connectivity issue:', networkError);
+                addSystemMessage('Warning: Network connectivity issue detected. Transactions may fail.');
+            }
+        }
+
+        // Generate test prompts (adapted for PAS)
+        async function generateTestPrompts() {
+            const generateBtn = document.getElementById('generatePrompts');
+            const refreshBtn = document.getElementById('refreshPrompts');
+            
+            generateBtn.disabled = true;
+            refreshBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            refreshBtn.textContent = 'Refreshing...';
+
+            addSystemMessage('Generating diverse test prompts for PAS transfers...');
+
+            try {
+                const response = await fetch('/api/generate-prompts-polkadot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        count: 30,
+                        currency: 'PAS'
+                    })
+                });
+
+                if (!response.ok) {
+                    // Fall back to manual prompts for PAS
+                    promptsList = [
+                        "send 0.0001 PAS to 0x0000000000000000000000000000000000000001",
+                        "transfer 1/10000 PAS to burn address",
+                        "send one ten-thousandth of a PAS to the burn address",
+                        "transmit 0.0001 PAS to null address",
+                        "move 100 microPAS to 0x0000000000000000000000000000000000000001",
+                        "shift 0.1 milliPAS to burn",
+                        "forward 10^-4 PAS to the void",
+                        "dispatch 1e-4 PAS to zero address",
+                        "route 0.0001 PAS to testnet burn",
+                        "deliver point zero zero zero one PAS to 0x0000000000000000000000000000000000000001"
+                    ];
+                } else {
+                    const data = await response.json();
+                    promptsList = data.prompts;
+                }
+                
+                displayPrompts(promptsList);
+                
+                addSystemMessage(`Generated ${promptsList.length} test prompts for PAS transactions.`);
+                
+                // Show refresh button after first generation
+                refreshBtn.style.display = 'block';
+            } catch (error) {
+                console.error('Error generating prompts:', error);
+                
+                // Fallback prompts for PAS
+                promptsList = [
+                    "send 0.0001 PAS to 0x0000000000000000000000000000000000000001"
+                ];
+                
+                displayPrompts(promptsList);
+                addSystemMessage('Using fallback prompts for PAS testing.');
+            }
+
+            generateBtn.disabled = false;
+            refreshBtn.disabled = false;
+            generateBtn.textContent = 'Generate Test Prompts';
+            refreshBtn.textContent = 'Refresh Prompts';
+        }
+
+        // Display prompts in queue
+        function displayPrompts(prompts) {
+            const queueEl = document.getElementById('promptQueue');
+            queueEl.innerHTML = '';
+
+            prompts.forEach((prompt, index) => {
+                const promptEl = document.createElement('div');
+                promptEl.className = 'prompt-item';
+                promptEl.textContent = prompt;
+                promptEl.dataset.index = index;
+                queueEl.appendChild(promptEl);
+            });
+            
+            // Update prompt count
+            document.getElementById('promptCount').textContent = prompts.length;
+        }
+        
+        // Add custom prompt
+        function addCustomPrompt() {
+            const input = document.getElementById('customPrompt');
+            const prompt = input.value.trim();
+            
+            if (!prompt) {
+                addSystemMessage('Please enter a prompt.');
+                return;
+            }
+            
+            // Add to prompts list
+            promptsList.push(prompt);
+            displayPrompts(promptsList);
+            
+            // Clear input
+            input.value = '';
+            
+            addSystemMessage(`Added custom prompt: "${prompt}"`);
+        }
+        
+        // Send manual chat message
+        async function sendManualChat() {
+            const input = document.getElementById('manualChatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            if (!isConnected) {
+                addSystemMessage('Please connect your wallet first.');
+                return;
+            }
+            
+            // Clear input
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('sendManualChat').disabled = true;
+            
+            // Add user message
+            addChatMessage(message, 'user', 'User');
+            
+            // Show typing indicator
+            document.getElementById('typingIndicator').style.display = 'block';
+            
+            try {
+                // Step 1: Agent analyzes the prompt (adapted for Polkadot)
+                const analyzeResponse = await fetch('/api/agent-chat-polkadot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message,
+                        stage: 'analyze',
+                        currency: 'PAS'
+                    })
+                });
+
+                const analysis = await analyzeResponse.json();
+                
+                console.log('Full analysis object:', analysis);
+                console.log('Response field:', analysis.response);
+                console.log('Response type:', typeof analysis.response);
+                
+                // Hide typing indicator and show response
+                document.getElementById('typingIndicator').style.display = 'none';
+                
+                if (!analysis.response) {
+                    console.error('No response field in analysis!');
+                    addSystemMessage('Error: No response from agent');
+                } else {
+                    addChatMessage(analysis.response, 'agent', 'Transaction Agent');
+                }
+                
+                // Only proceed with transaction if in automated testing
+                // For manual chat, just show the interpretation
+                
+                if (analysis.interpretation) {
+                    const interpretedAddress = analysis.interpretation.address ? 
+                        (analysis.interpretation.address.slice(0, 6) + '...' + analysis.interpretation.address.slice(-4)) : 
+                        'Unknown';
+                    
+                    addSystemMessage(`Agent interpreted: ${analysis.interpretation.amount || '?'} PAS to ${interpretedAddress}`);
+                    addSystemMessage(`This ${analysis.isValid ? 'matches' : 'does not match'} the expected values (0.0001 PAS to burn address)`);
+                }
+                
+            } catch (error) {
+                console.error('Error in manual chat:', error);
+                document.getElementById('typingIndicator').style.display = 'none';
+                addSystemMessage('Error: ' + error.message);
+            }
+            
+            // Re-enable input
+            input.disabled = false;
+            document.getElementById('sendManualChat').disabled = false;
+            input.focus();
+        }
+
+        // Start testing
+        function startTesting() {
+            if (!isConnected) {
+                addSystemMessage('Please connect your wallet first.');
+                return;
+            }
+
+            if (promptsList.length === 0) {
+                addSystemMessage('Please generate test prompts first.');
+                return;
+            }
+
+            isRunning = true;
+            isPaused = false;
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('pauseTest').disabled = false;
+            document.getElementById('testingStatus').textContent = 'Running';
+            
+            runNextTest();
+        }
+
+        // Pause testing
+        function pauseTesting() {
+            isPaused = true;
+            document.getElementById('pauseTest').disabled = true;
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('startTest').textContent = 'Resume';
+            document.getElementById('testingStatus').textContent = 'Paused';
+        }
+
+        // Run next test
+        async function runNextTest() {
+            if (!isRunning || isPaused) return;
+
+            if (currentPromptIndex >= promptsList.length) {
+                // All tests complete
+                isRunning = false;
+                document.getElementById('testingStatus').textContent = 'Complete';
+                addSystemMessage('All tests completed!');
+                return;
+            }
+
+            const prompt = promptsList[currentPromptIndex];
+            const promptEl = document.querySelector(`[data-index="${currentPromptIndex}"]`);
+            if (promptEl) promptEl.classList.add('active');
+
+            // Clear previous conversation
+            clearConversation();
+
+            // Add user message
+            addChatMessage(prompt, 'user', 'User');
+
+            // Show typing indicator
+            document.getElementById('typingIndicator').style.display = 'block';
+
+            try {
+                // Step 1: Agent analyzes the prompt
+                const analyzeResponse = await fetch('/api/agent-chat-polkadot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: prompt,
+                        stage: 'analyze',
+                        currency: 'PAS'
+                    })
+                });
+
+                const analysis = await analyzeResponse.json();
+                
+                console.log('Analysis response:', analysis);
+                console.log('Agent response text:', analysis.response);
+                
+                // Hide typing indicator and show agent response
+                document.getElementById('typingIndicator').style.display = 'none';
+                
+                if (!analysis.response) {
+                    console.error('NO RESPONSE FIELD IN ANALYSIS!');
+                    addSystemMessage('Error: Agent returned no response');
+                } else {
+                    addChatMessage(analysis.response, 'agent', 'Transaction Agent');
+                }
+
+                // Agent always creates a transaction now
+                if (analysis.transaction) {
+                    // Step 2: Get confirmation
+                    await sleep(1000);
+                    document.getElementById('typingIndicator').style.display = 'block';
+
+                    const confirmResponse = await fetch('/api/agent-chat-polkadot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            message: prompt,
+                            stage: 'confirm',
+                            transaction: analysis.transaction,
+                            currency: 'PAS'
+                        })
+                    });
+
+                    const confirmation = await confirmResponse.json();
+                    
+                    document.getElementById('typingIndicator').style.display = 'none';
+                    addChatMessage(confirmation.response, 'agent', 'Transaction Agent');
+
+                    // Step 3: Send actual transaction
+                    
+                    // Check balance first
+                    try {
+                        const balance = await window.ethereum.request({
+                            method: 'eth_getBalance',
+                            params: [walletAddress, 'latest']
+                        });
+                        const balanceInPAS = parseInt(balance, 16) / 1e18;
+                        console.log('Current PAS balance:', balanceInPAS);
+                        
+                        if (balanceInPAS < 0.0002) { // Need at least 0.0001 PAS + gas
+                            addSystemMessage(`Warning: Low PAS balance (${balanceInPAS.toFixed(6)} PAS). You may need more for gas fees.`);
+                        }
+                    } catch (balanceError) {
+                        console.warn('Could not check balance:', balanceError);
+                    }
+                    
+                    // Ensure addresses are properly formatted
+                    let txParams = {
+                        from: walletAddress.toLowerCase(),
+                        to: analysis.transaction.to.toLowerCase(),
+                        value: analysis.transaction.value,
+                        data: '0x', // Empty data for simple transfer
+                    };
+
+                    // Try to estimate gas for Polkadot network
+                    try {
+                        const estimatedGas = await window.ethereum.request({
+                            method: 'eth_estimateGas',
+                            params: [txParams]
+                        });
+                        txParams.gas = estimatedGas;
+                        console.log('Estimated gas:', estimatedGas);
+                    } catch (gasError) {
+                        console.warn('Gas estimation failed, using default:', gasError);
+                        txParams.gas = '0x5208'; // 21000 in hex
+                    }
+
+                    addSystemMessage('Waiting for MetaMask signature...');
+                    
+                    console.log('Transaction params:', txParams);
+                    console.log('Transaction params decoded:', {
+                        from: txParams.from,
+                        to: txParams.to,
+                        value: parseInt(txParams.value, 16) / 1e18 + ' PAS',
+                        gas: parseInt(txParams.gas || '0x5208', 16) + ' units'
+                    });
+                    console.log('Current network chainId:', await window.ethereum.request({ method: 'eth_chainId' }));
+
+                    try {
+                        const txHash = await window.ethereum.request({
+                            method: 'eth_sendTransaction',
+                            params: [txParams],
+                        });
+
+                        // Step 4: Success message
+                        document.getElementById('typingIndicator').style.display = 'block';
+                        await sleep(1000);
+
+                        const successResponse = await fetch('/api/agent-chat-polkadot', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                message: prompt,
+                                stage: 'success',
+                                transactionHash: txHash,
+                                transaction: { isValid: analysis.isValid },
+                                currency: 'PAS'
+                            })
+                        });
+
+                        const success = await successResponse.json();
+                        
+                        document.getElementById('typingIndicator').style.display = 'none';
+                        addChatMessage(success.response, 'agent', 'Transaction Agent');
+
+                        // Log the transaction - mark as success/failure based on isValid
+                        const testResult = analysis.isValid ? 'success' : 'failure';
+                        logTransaction(prompt, testResult, txHash, analysis.transaction, null, analysis.interpretation);
+                        
+                        // Update stats based on whether agent got it right
+                        if (analysis.isValid) {
+                            testStats.success++;
+                            totalPasBurned += 0.0001; // Only count correctly interpreted transactions
+                        } else {
+                            testStats.failure++;
+                        }
+                        
+                        if (promptEl) {
+                            promptEl.classList.remove('active');
+                            promptEl.classList.add(analysis.isValid ? 'success' : 'failure');
+                        }
+
+                    } catch (txError) {
+                        // User rejected or transaction failed
+                        console.error('Transaction error details:', txError);
+                        
+                        let errorMessage = txError.message || 'Unknown error';
+                        
+                        // Check for specific RPC errors
+                        if (txError.code === -32603) {
+                            errorMessage = 'RPC Error: ' + (txError.data?.message || txError.message);
+                            addSystemMessage('RPC Error detected. Possible causes:');
+                            addSystemMessage('1. Insufficient PAS balance (need at least 0.0001 PAS + gas)');
+                            addSystemMessage('2. Network congestion or RPC issues');
+                            addSystemMessage('3. Try refreshing the page and reconnecting wallet');
+                        }
+                        
+                        addSystemMessage('Transaction failed: ' + errorMessage);
+                        logTransaction(prompt, 'error', null, analysis.transaction, errorMessage, analysis.interpretation);
+                        testStats.failure++;
+                        
+                        if (promptEl) {
+                            promptEl.classList.remove('active');
+                            promptEl.classList.add('failure');
+                        }
+                    }
+
+                } else {
+                    // This shouldn't happen with new logic - agent error
+                    addSystemMessage('Agent error: No transaction created');
+                    testStats.failure++;
+                    
+                    if (promptEl) {
+                        promptEl.classList.remove('active');
+                        promptEl.classList.add('failure');
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error in test:', error);
+                document.getElementById('typingIndicator').style.display = 'none';
+                addSystemMessage('Error: ' + error.message);
+                testStats.failure++;
+                
+                if (promptEl) {
+                    promptEl.classList.remove('active');
+                    promptEl.classList.add('failure');
+                }
+            }
+
+            // Update stats
+            testStats.total++;
+            updateStats();
+
+            // Move to next prompt
+            currentPromptIndex++;
+
+            // Continue testing after delay
+            if (isRunning && !isPaused) {
+                setTimeout(runNextTest, 3000);
+            }
+        }
+
+        // Add chat message
+        function addChatMessage(message, type, label) {
+            console.log('addChatMessage called:', { message, type, label });
+            
+            const chatContainer = document.getElementById('chatContainer');
+            
+            if (!chatContainer) {
+                console.error('Chat container not found!');
+                return;
+            }
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            const labelEl = document.createElement('div');
+            labelEl.className = 'message-label';
+            labelEl.textContent = label;
+            
+            const contentEl = document.createElement('div');
+            contentEl.textContent = message;
+            
+            // Ensure content is visible
+            if (!message || message.trim() === '') {
+                console.error('Empty message content!');
+                contentEl.textContent = '[Empty message]';
+            }
+            
+            messageEl.appendChild(labelEl);
+            messageEl.appendChild(contentEl);
+            
+            // Simply append to chat container
+            chatContainer.appendChild(messageEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            console.log('Message added. Current chat container children:', chatContainer.children.length);
+        }
+
+        // Add system message
+        function addSystemMessage(message) {
+            addChatMessage(message, 'system', 'System');
+        }
+
+        // Clear conversation
+        function clearConversation() {
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.innerHTML = '';
+            }
+        }
+
+        // Log transaction
+        function logTransaction(prompt, status, txHash, transaction, error, interpretation) {
+            const logContainer = document.getElementById('transactionLog');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${status === 'success' ? 'success' : 'failure'}`;
+            
+            const timestamp = new Date().toLocaleString();
+            
+            const statusText = status === 'success' ? 'PASS' : status === 'failure' ? 'FAIL' : 'ERROR';
+            const statusColor = status === 'success' ? '#10B981' : '#EF4444';
+            
+            let detailsHtml = `
+                <div class="log-timestamp">${timestamp}</div>
+                <div style="font-weight: bold; color: ${statusColor}; margin-bottom: 0.5rem;">
+                    ${statusText} - ${status === 'success' ? 'Correctly interpreted' : status === 'failure' ? 'Misinterpreted' : 'Transaction error'}
+                </div>
+                <div class="log-details">
+                    <span class="log-label">Prompt:</span>
+                    <span class="log-value">${prompt}</span>
+            `;
+            
+            if (interpretation) {
+                const interpretedAddress = interpretation.address ? 
+                    (interpretation.address.slice(0, 6) + '...' + interpretation.address.slice(-4)) : 
+                    'Unknown';
+                detailsHtml += `
+                    <span class="log-label">Agent Interpreted:</span>
+                    <span class="log-value" style="color: #9CA3AF;">${interpretation.amount || '?'} PAS to ${interpretedAddress}</span>
+                `;
+            }
+            
+            detailsHtml += `
+                <span class="log-label">Expected Values:</span>
+                <span class="log-value">0.0001 PAS to 0x0000...0001</span>
+            `;
+            
+            if (transaction) {
+                const pasAmount = (parseInt(transaction.value, 16) / 1e18).toFixed(6);
+                const shortAddress = transaction.to.slice(0, 6) + '...' + transaction.to.slice(-4);
+                detailsHtml += `
+                    <span class="log-label">Actual Transaction:</span>
+                    <span class="log-value">${pasAmount} PAS to ${shortAddress}</span>
+                `;
+            }
+            
+            if (txHash) {
+                detailsHtml += `
+                    <span class="log-label">Tx Hash:</span>
+                    <span class="log-value">
+                        <a href="${POLKADOT_TESTNET.blockExplorerUrls[0]}tx/${txHash}" target="_blank">
+                            ${txHash.slice(0, 10)}...${txHash.slice(-8)}
+                        </a>
+                    </span>
+                `;
+            }
+            
+            if (error) {
+                detailsHtml += `
+                    <span class="log-label">Error:</span>
+                    <span class="log-value">${error}</span>
+                `;
+            }
+            
+            detailsHtml += '</div>';
+            
+            logEntry.innerHTML = detailsHtml;
+            
+            // Add to top of log
+            logContainer.insertBefore(logEntry, logContainer.firstChild);
+            
+            // Keep only last 10 entries
+            while (logContainer.children.length > 10) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('successCount').textContent = testStats.success;
+            document.getElementById('failureCount').textContent = testStats.failure;
+            
+            const successRate = testStats.total > 0 
+                ? Math.round((testStats.success / testStats.total) * 100) 
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            document.getElementById('totalPasBurned').textContent = totalPasBurned.toFixed(4);
+        }
+
+        // Utility function
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html> 
