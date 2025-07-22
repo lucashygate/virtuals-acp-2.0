@@ -10,7 +10,13 @@ export async function POST(request: NextRequest) {
     console.log('Generating dynamic test prompts with complex number representations...');
 
     // Get parameters from request (optional)
-    const { count = 30 } = await request.json().catch(() => ({}));
+    let count = 30;
+    try {
+      const body = await request.json();
+      count = body.count || 30;
+    } catch (parseError) {
+      console.log('No JSON body provided, using default count:', count);
+    }
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',

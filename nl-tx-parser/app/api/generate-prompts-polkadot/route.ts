@@ -7,7 +7,15 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { count = 30, currency = 'PAS' } = await request.json();
+    let count = 30;
+    let currency = 'PAS';
+    try {
+      const body = await request.json();
+      count = body.count || 30;
+      currency = body.currency || 'PAS';
+    } catch (parseError) {
+      console.log('No JSON body provided, using defaults:', { count, currency });
+    }
 
     const systemPrompt = `Generate ${count} unique test prompts for sending 0.0001 ${currency} to the burn address (0x0000000000000000000000000000000000000001) on Polkadot Hub TestNet.
 
