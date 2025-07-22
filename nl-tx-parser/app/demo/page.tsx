@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react';
 import './demo.css';
 
+// TypeScript declaration for MetaMask ethereum object
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+      on?: (event: string, callback: (...args: any[]) => void) => void;
+      removeListener?: (event: string, callback: (...args: any[]) => void) => void;
+    };
+  }
+}
+
 interface TestStats {
   total: number;
   success: number;
@@ -51,6 +62,11 @@ export default function DemoPage() {
 
   const connectWallet = async () => {
     try {
+      if (!window.ethereum) {
+        alert('MetaMask is not installed. Please install MetaMask to continue.');
+        return;
+      }
+      
       const accounts = await window.ethereum.request({ 
         method: 'eth_requestAccounts' 
       });
@@ -259,6 +275,10 @@ export default function DemoPage() {
         addSystemMessage('Waiting for MetaMask signature...');
 
         try {
+          if (!window.ethereum) {
+            throw new Error('MetaMask not available');
+          }
+          
           const txHash = await window.ethereum.request({
             method: 'eth_sendTransaction',
             params: [txParams],
@@ -500,10 +520,4 @@ export default function DemoPage() {
       </footer>
     </div>
   );
-}
-
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
 } 
