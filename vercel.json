@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd nl-tx-parser && pnpm build",
+  "outputDirectory": "nl-tx-parser/.next",
+  "installCommand": "cd nl-tx-parser && pnpm install",
+  "framework": "nextjs",
+  "functions": {
+    "nl-tx-parser/app/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
+} 
