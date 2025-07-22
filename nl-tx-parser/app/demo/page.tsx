@@ -35,6 +35,9 @@ export default function DemoPage() {
   }, []);
 
   const checkWalletConnection = async () => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     if (typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -50,6 +53,8 @@ export default function DemoPage() {
   };
 
   const connectWallet = async () => {
+    if (typeof window === 'undefined' || !window.ethereum) return;
+    
     try {
       const accounts = await window.ethereum.request({ 
         method: 'eth_requestAccounts' 
@@ -257,6 +262,10 @@ export default function DemoPage() {
         };
 
         addSystemMessage('Waiting for MetaMask signature...');
+
+        if (!window.ethereum) {
+          throw new Error('MetaMask not available');
+        }
 
         try {
           const txHash = await window.ethereum.request({
@@ -502,8 +511,4 @@ export default function DemoPage() {
   );
 }
 
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-} 
+ 

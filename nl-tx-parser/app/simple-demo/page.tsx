@@ -32,6 +32,8 @@ export default function SimpleDemo() {
   }, []);
 
   const checkConnection = async () => {
+    if (typeof window === 'undefined') return;
+    
     if (typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -46,6 +48,11 @@ export default function SimpleDemo() {
   };
 
   const connectWallet = async () => {
+    if (typeof window === 'undefined' || !window.ethereum) {
+      alert('MetaMask is not installed. Please install it to continue.');
+      return;
+    }
+    
     if (typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ 
@@ -89,7 +96,7 @@ export default function SimpleDemo() {
   };
 
   const sendTransaction = async (params: TransactionParams): Promise<string> => {
-    if (!window.ethereum) {
+    if (typeof window === 'undefined' || !window.ethereum) {
       throw new Error('MetaMask is not installed');
     }
     
