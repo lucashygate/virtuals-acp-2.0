@@ -7,18 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy:vercel": "vercel --prod",
-    "deploy:netlify": "netlify deploy --prod --build"
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
-    "next": "15.4.1",
+    "next": "15.4.2",
     "openai": "^5.10.1",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "sharp": "^0.34.3"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/react": "^19.1.8",
     "@types/react-dom": "^19",
     "typescript": "^5"
   }
