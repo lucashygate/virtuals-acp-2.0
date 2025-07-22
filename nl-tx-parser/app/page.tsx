@@ -46,16 +46,11 @@ export default function Home() {
           <h3>How It Works</h3>
           <ol>
             <li>Connect your MetaMask wallet</li>
-            <li>Generate diverse test prompts in multiple languages and formats</li>
-            <li>AI agent interprets each prompt and shows what it understood</li>
-            <li>Every test executes the same hardcoded transaction (0.0001 to burn)</li>
-            <li>Track whether AI correctly understood the user&apos;s intent</li>
+            <li>Chat with the AI agent using natural language</li>
+            <li>AI agent interprets your request and shows what it understood</li>
+            <li>Review and confirm the transaction details</li>
+            <li>Execute the transaction directly from your wallet</li>
           </ol>
-          
-          <p className={styles.note}>
-            <strong>Note:</strong> This is a testing tool for measuring semantic drift in AI language understanding. 
-            All transactions are hardcoded to send 0.0001 tokens to the burn address, regardless of what the prompt requests.
-          </p>
         </div>
 
         <div className={styles.footer}>
