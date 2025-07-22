@@ -58,13 +58,8 @@ Your Next.js app is in the `nl-tx-parser` subdirectory, but Vercel was trying to
 
 ## What Changed
 
-1. Created `vercel.json` in repository root with:
-   ```json
-   {
-     "root": "nl-tx-parser"
-   }
-   ```
-   This tells Vercel where your Next.js app is located.
+1. **Removed problematic `vercel.json`** - We'll configure the root directory through Vercel dashboard instead (modern approach)
+2. **Will set Root Directory in dashboard** - This tells Vercel where your Next.js app is located
 
 ## Verify Deployment Success
 
