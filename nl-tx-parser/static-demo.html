@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETH Transfer Semantic Drift Testing - Base Sepolia Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0F172A;
+            color: #E5E7EB;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Main Layout */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #D4AF37;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .wallet-info {
+            padding: 0.5rem 1rem;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 0.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            height: 100%;
+            min-height: 600px;
+        }
+
+        /* Left Panel - Controls and Queue */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #D4AF37;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .button {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            background: #D4AF37;
+            color: #0F172A;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 0.75rem;
+        }
+
+        .button:hover:not(:disabled) {
+            background: #F59E0B;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .button:disabled {
+            background: #4B5563;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.secondary {
+            background: #6366F1;
+        }
+
+        .button.secondary:hover:not(:disabled) {
+            background: #4F46E5;
+        }
+
+        /* Test Queue */
+        .queue-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prompt-queue {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .prompt-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 3px solid #6B7280;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-item.active {
+            border-left-color: #D4AF37;
+            background: rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+
+        .prompt-item.success {
+            border-left-color: #10B981;
+            opacity: 0.7;
+        }
+
+        .prompt-item.failure {
+            border-left-color: #EF4444;
+            opacity: 0.7;
+        }
+
+        /* Right Panel - Main Testing Area */
+        .right-panel {
+            display: grid;
+            grid-template-rows: 1fr 300px;
+            gap: 2rem;
+        }
+
+        /* Agent Conversation */
+        .conversation-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            background: rgba(212, 175, 55, 0.15);
+            border-left: 3px solid #D4AF37;
+            margin-right: 20%;
+        }
+
+        .chat-message.agent {
+            background: rgba(99, 102, 241, 0.15);
+            border-left: 3px solid #6366F1;
+            margin-left: 20%;
+            color: #E5E7EB;
+        }
+
+        .chat-message.system {
+            background: rgba(107, 114, 128, 0.15);
+            border-left: 3px solid #6B7280;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .message-label {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            color: #6366F1;
+        }
+
+        .typing-indicator::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Transaction Log */
+        .transaction-log {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .log-entry.success {
+            border-left: 3px solid #10B981;
+        }
+
+        .log-entry.failure {
+            border-left: 3px solid #EF4444;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 1.5rem 2rem;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stats-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #D4AF37;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* API Configuration Section */
+        .config-section {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 0.25rem;
+            color: #E5E7EB;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                height: auto;
+            }
+
+            .left-panel {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .queue-section {
+                grid-column: span 2;
+                max-height: 200px;
+            }
+            
+            .right-panel {
+                grid-template-rows: minmax(400px, 1fr) minmax(200px, 300px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">ETH Transfer Semantic Drift Testing - Base Sepolia</h1>
+                <div class="wallet-section">
+                    <div class="wallet-info" id="walletInfo">
+                        Wallet: Not Connected
+                    </div>
+                    <button class="button" id="connectWallet">Connect Wallet</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- API Configuration -->
+            <div class="config-section">
+                <h2 class="section-title" style="color: #EF4444;">⚠️ API Configuration Required</h2>
+                <p style="margin-bottom: 1rem; color: #F87171;">Enter your deployed API base URL to enable functionality:</p>
+                <input type="text" 
+                       id="apiBaseUrl" 
+                       class="config-input" 
+                       placeholder="https://your-api-domain.com" 
+                       value="https://your-api-domain.com">
+                <button class="button secondary" onclick="updateApiConfig()" style="width: auto; margin: 0;">Update API URL</button>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #9CA3AF;">
+                    Need to deploy the API? Use Railway.app, Render.com, or your Node.js server with the nl-tx-parser API endpoints.
+                </p>
+            </div>
+
+            <div class="content-grid">
+                <!-- Left Panel -->
+                <aside class="left-panel">
+                    <!-- Controls -->
+                    <div class="control-section">
+                        <h2 class="section-title">Test Controls</h2>
+                        <button class="button secondary" id="generatePrompts" disabled>
+                            Generate Test Prompts
+                        </button>
+                        <button class="button" id="startTest" disabled>
+                            Start Testing
+                        </button>
+                        <button class="button" id="pauseTest" disabled>
+                            Pause Testing
+                        </button>
+                        <div style="margin-top: 1rem;">
+                            <input type="text" 
+                                   id="customPrompt" 
+                                   placeholder="Add custom prompt..." 
+                                   style="width: 100%; padding: 0.5rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 0.25rem; color: #E5E7EB; margin-bottom: 0.5rem;"
+                                   disabled>
+                            <button class="button secondary" id="addCustomPrompt" disabled style="width: 100%;">
+                                Add Custom Prompt
+                            </button>
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.9rem; color: #9CA3AF;">
+                            <p>Testing: <span id="testingStatus">Configure API First</span></p>
+                            <p>Speed: <span id="testSpeed">3s per test</span></p>
+                            <p>Prompts: <span id="promptCount">0</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Test Queue -->
+                    <div class="queue-section">
+                        <h2 class="section-title">Test Queue</h2>
+                        <div class="prompt-queue" id="promptQueue">
+                            <!-- Prompts will be added here -->
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right Panel -->
+                <div class="right-panel">
+                    <!-- Agent Conversation -->
+                    <div class="conversation-section">
+                        <h2 class="section-title">Agent Conversation</h2>
+                        <div class="chat-container" id="chatContainer">
+                            <div class="chat-message system">
+                                <div class="message-label">System</div>
+                                Configure your API URL above, then connect your wallet to begin testing.
+                            </div>
+                        </div>
+                        <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                            Agent is thinking
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <input type="text" 
+                                   id="manualChatInput" 
+                                   placeholder="Type a message..." 
+                                   style="flex: 1; padding: 0.75rem; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 0.5rem; color: #E5E7EB;"
+                                   disabled>
+                            <button class="button" id="sendManualChat" style="width: auto;" disabled>Send</button>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Log -->
+                    <div class="transaction-log">
+                        <h2 class="section-title">Transaction Log</h2>
+                        <div id="transactionLog">
+                            <p style="color: #9CA3AF; font-style: italic;">
+                                Configure API and connect wallet to see transaction logs...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Stats Bar -->
+        <footer class="stats-bar">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successCount">0</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="failureCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successRate">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalEthBurned">0</div>
+                    <div class="stat-label">ETH Burned</div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ====== CONFIGURATION ======
+        // Change this to your deployed API URL
+        let API_BASE_URL = 'https://your-api-domain.com';
+        
+        // ====== STATE MANAGEMENT ======
+        let isConnected = false;
+        let walletAddress = null;
+        let isRunning = false;
+        let isPaused = false;
+        let currentPromptIndex = 0;
+        let testStats = { total: 0, success: 0, failure: 0 };
+        let totalEthBurned = 0;
+        let promptsList = [];
+
+        // ====== API CONFIGURATION ======
+        function updateApiConfig() {
+            const newUrl = document.getElementById('apiBaseUrl').value.trim();
+            if (!newUrl) {
+                addSystemMessage('Please enter a valid API URL.');
+                return;
+            }
+            
+            // Remove trailing slash
+            API_BASE_URL = newUrl.replace(/\/$/, '');
+            
+            addSystemMessage(`API URL updated to: ${API_BASE_URL}`);
+            addSystemMessage('You can now connect your wallet and start testing!');
+            
+            document.getElementById('testingStatus').textContent = 'Ready to Connect';
+            
+            // Hide the config section
+            document.querySelector('.config-section').style.display = 'none';
+        }
+
+        // ====== INITIALIZATION ======
+        async function init() {
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                checkConnection();
+            } else {
+                addSystemMessage('MetaMask not detected. Please install MetaMask to use this demo.');
+            }
+
+            // Set up event listeners
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            document.getElementById('generatePrompts').addEventListener('click', generateTestPrompts);
+            document.getElementById('startTest').addEventListener('click', startTesting);
+            document.getElementById('pauseTest').addEventListener('click', pauseTesting);
+            document.getElementById('addCustomPrompt').addEventListener('click', addCustomPrompt);
+            document.getElementById('sendManualChat').addEventListener('click', sendManualChat);
+            
+            // Enable enter key for inputs
+            document.getElementById('customPrompt').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addCustomPrompt();
+            });
+            
+            document.getElementById('manualChatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendManualChat();
+            });
+        }
+
+        // ====== WALLET CONNECTION ======
+        async function checkConnection() {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    handleConnected(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Error checking connection:', error);
+            }
+        }
+
+        async function connectWallet() {
+            if (API_BASE_URL === 'https://your-api-domain.com') {
+                addSystemMessage('Please configure your API URL first using the red section above.');
+                return;
+            }
+            
+            try {
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
+                if (accounts.length > 0) {
+                    // Switch to Base Sepolia
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x14A34' }], // 84532 in hex
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x14A34',
+                                    chainName: 'Base Sepolia',
+                                    nativeCurrency: {
+                                        name: 'ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://sepolia.base.org'],
+                                    blockExplorerUrls: ['https://sepolia.basescan.org']
+                                }],
+                            });
+                        }
+                    }
+                    
+                    handleConnected(accounts[0]);
+                }
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                addSystemMessage('Failed to connect wallet. Please try again.');
+            }
+        }
+
+        function handleConnected(address) {
+            isConnected = true;
+            walletAddress = address;
+            document.getElementById('walletInfo').textContent = 
+                `Wallet: ${address.slice(0, 6)}...${address.slice(-4)} (Base Sepolia)`;
+            document.getElementById('connectWallet').textContent = 'Connected';
+            document.getElementById('connectWallet').disabled = true;
+            document.getElementById('generatePrompts').disabled = false;
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('customPrompt').disabled = false;
+            document.getElementById('addCustomPrompt').disabled = false;
+            document.getElementById('manualChatInput').disabled = false;
+            document.getElementById('sendManualChat').disabled = false;
+            document.getElementById('testingStatus').textContent = 'Connected - Ready to Test';
+            
+            addSystemMessage('Wallet connected successfully! You can now generate test prompts or chat with the agent directly.');
+        }
+
+        // ====== API HELPERS ======
+        async function makeApiCall(endpoint, data) {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+            }
+            
+            return await response.json();
+        }
+
+        // ====== PROMPT GENERATION ======
+        async function generateTestPrompts() {
+            const generateBtn = document.getElementById('generatePrompts');
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+
+            addSystemMessage('Generating diverse test prompts...');
+
+            try {
+                const data = await makeApiCall('/api/generate-prompts', { count: 30 });
+                
+                if (data.prompts) {
+                    promptsList = data.prompts;
+                    displayPrompts(promptsList);
+                    addSystemMessage(`Generated ${promptsList.length} unique test prompts dynamically.`);
+                } else {
+                    throw new Error('No prompts in response');
+                }
+            } catch (error) {
+                console.error('Error generating prompts:', error);
+                // Fallback prompts
+                promptsList = [
+                    "send 0.0001 ETH to 0x0000000000000000000000000000000000000001",
+                    "transfer 1/10000 ETH to burn address",
+                    "send one ten-thousandth ETH to 0x0000000000000000000000000000000000000001",
+                    "1e-4 ETH to null address",
+                    "0.1 milliETH to burn address"
+                ];
+                displayPrompts(promptsList);
+                addSystemMessage('Error generating prompts. Using fallback prompts. Check your API configuration.');
+            }
+
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generate Test Prompts';
+        }
+
+        function displayPrompts(prompts) {
+            const queueEl = document.getElementById('promptQueue');
+            queueEl.innerHTML = '';
+
+            prompts.forEach((prompt, index) => {
+                const promptEl = document.createElement('div');
+                promptEl.className = 'prompt-item';
+                promptEl.textContent = prompt;
+                promptEl.dataset.index = index;
+                queueEl.appendChild(promptEl);
+            });
+            
+            document.getElementById('promptCount').textContent = prompts.length;
+        }
+
+        function addCustomPrompt() {
+            const input = document.getElementById('customPrompt');
+            const prompt = input.value.trim();
+            
+            if (!prompt) {
+                addSystemMessage('Please enter a prompt.');
+                return;
+            }
+            
+            promptsList.push(prompt);
+            displayPrompts(promptsList);
+            input.value = '';
+            addSystemMessage(`Added custom prompt: "${prompt}"`);
+        }
+
+        // ====== CHAT FUNCTIONALITY ======
+        async function sendManualChat() {
+            const input = document.getElementById('manualChatInput');
+            const message = input.value.trim();
+            
+            if (!message || !isConnected) return;
+            
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('sendManualChat').disabled = true;
+            
+            addChatMessage(message, 'user', 'User');
+            document.getElementById('typingIndicator').style.display = 'block';
+
+            try {
+                const analysis = await makeApiCall('/api/agent-chat', { 
+                    message: message,
+                    stage: 'analyze'
+                });
+                
+                document.getElementById('typingIndicator').style.display = 'none';
+                
+                if (analysis.response) {
+                    addChatMessage(analysis.response, 'agent', 'Transaction Agent');
+                }
+                
+                if (analysis.interpretation) {
+                    const interpretedAddress = analysis.interpretation.address ? 
+                        (analysis.interpretation.address.slice(0, 6) + '...' + analysis.interpretation.address.slice(-4)) : 
+                        'Unknown';
+                    
+                    addSystemMessage(`Agent interpreted: ${analysis.interpretation.amount || '?'} ETH to ${interpretedAddress}`);
+                    addSystemMessage(`This ${analysis.isValid ? 'matches' : 'does not match'} the expected values (0.0001 ETH to burn address)`);
+                }
+                
+            } catch (error) {
+                console.error('Error in manual chat:', error);
+                document.getElementById('typingIndicator').style.display = 'none';
+                addSystemMessage('Error: ' + error.message + '. Check your API configuration.');
+            }
+            
+            input.disabled = false;
+            document.getElementById('sendManualChat').disabled = false;
+            input.focus();
+        }
+
+        // ====== TESTING FUNCTIONALITY ======
+        function startTesting() {
+            if (!isConnected) {
+                addSystemMessage('Please connect your wallet first.');
+                return;
+            }
+
+            if (promptsList.length === 0) {
+                addSystemMessage('Please generate test prompts first.');
+                return;
+            }
+
+            isRunning = true;
+            isPaused = false;
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('pauseTest').disabled = false;
+            document.getElementById('testingStatus').textContent = 'Running';
+            
+            runNextTest();
+        }
+
+        function pauseTesting() {
+            isPaused = true;
+            document.getElementById('pauseTest').disabled = true;
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('startTest').textContent = 'Resume';
+            document.getElementById('testingStatus').textContent = 'Paused';
+        }
+
+        async function runNextTest() {
+            if (!isRunning || isPaused) return;
+
+            if (currentPromptIndex >= promptsList.length) {
+                isRunning = false;
+                document.getElementById('testingStatus').textContent = 'Complete';
+                addSystemMessage('All tests completed!');
+                return;
+            }
+
+            const prompt = promptsList[currentPromptIndex];
+            const promptEl = document.querySelector(`[data-index="${currentPromptIndex}"]`);
+            if (promptEl) promptEl.classList.add('active');
+
+            clearConversation();
+            addChatMessage(prompt, 'user', 'User');
+            document.getElementById('typingIndicator').style.display = 'block';
+
+            try {
+                // Step 1: Agent analyzes
+                const analysis = await makeApiCall('/api/agent-chat', { 
+                    message: prompt,
+                    stage: 'analyze'
+                });
+                
+                document.getElementById('typingIndicator').style.display = 'none';
+                
+                if (analysis.response) {
+                    addChatMessage(analysis.response, 'agent', 'Transaction Agent');
+                }
+
+                if (analysis.transaction && walletAddress) {
+                    // Step 2: Confirmation
+                    document.getElementById('typingIndicator').style.display = 'block';
+                    await sleep(1000);
+
+                    const confirmation = await makeApiCall('/api/agent-chat', { 
+                        message: prompt,
+                        stage: 'confirm',
+                        transaction: analysis.transaction
+                    });
+
+                    document.getElementById('typingIndicator').style.display = 'none';
+                    addChatMessage(confirmation.response, 'agent', 'Transaction Agent');
+
+                    // Step 3: Execute transaction
+                    const txParams = {
+                        from: walletAddress,
+                        to: analysis.transaction.to,
+                        value: analysis.transaction.value,
+                        gas: analysis.transaction.gas,
+                        chainId: analysis.transaction.chainId,
+                    };
+
+                    addSystemMessage('Waiting for MetaMask signature...');
+
+                    try {
+                        const txHash = await window.ethereum.request({
+                            method: 'eth_sendTransaction',
+                            params: [txParams],
+                        });
+
+                        // Step 4: Success message
+                        document.getElementById('typingIndicator').style.display = 'block';
+                        await sleep(1000);
+
+                        const success = await makeApiCall('/api/agent-chat', { 
+                            message: prompt,
+                            stage: 'success',
+                            transactionHash: txHash,
+                            transaction: { isValid: analysis.isValid }
+                        });
+
+                        document.getElementById('typingIndicator').style.display = 'none';
+                        addChatMessage(success.response, 'agent', 'Transaction Agent');
+
+                        // Update stats
+                        if (analysis.isValid) {
+                            testStats.success++;
+                            totalEthBurned += 0.0001;
+                        } else {
+                            testStats.failure++;
+                        }
+                        
+                        if (promptEl) {
+                            promptEl.classList.remove('active');
+                            promptEl.classList.add(analysis.isValid ? 'success' : 'failure');
+                        }
+
+                        logTransaction(prompt, analysis.isValid ? 'success' : 'failure', txHash, analysis.transaction, null, analysis.interpretation);
+
+                    } catch (txError) {
+                        addSystemMessage('Transaction rejected or failed: ' + txError.message);
+                        logTransaction(prompt, 'error', null, analysis.transaction, txError.message, analysis.interpretation);
+                        testStats.failure++;
+                        
+                        if (promptEl) {
+                            promptEl.classList.remove('active');
+                            promptEl.classList.add('failure');
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error in test:', error);
+                document.getElementById('typingIndicator').style.display = 'none';
+                addSystemMessage('Error: ' + error.message + '. Check your API configuration.');
+                testStats.failure++;
+                
+                if (promptEl) {
+                    promptEl.classList.remove('active');
+                    promptEl.classList.add('failure');
+                }
+            }
+
+            testStats.total++;
+            updateStats();
+            currentPromptIndex++;
+
+            if (isRunning && !isPaused) {
+                setTimeout(runNextTest, 3000);
+            }
+        }
+
+        // ====== UI HELPERS ======
+        function addChatMessage(message, type, label) {
+            const chatContainer = document.getElementById('chatContainer');
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${type}`;
+            
+            const labelEl = document.createElement('div');
+            labelEl.className = 'message-label';
+            labelEl.textContent = label;
+            
+            const contentEl = document.createElement('div');
+            contentEl.textContent = message;
+            
+            messageEl.appendChild(labelEl);
+            messageEl.appendChild(contentEl);
+            chatContainer.appendChild(messageEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addSystemMessage(message) {
+            addChatMessage(message, 'system', 'System');
+        }
+
+        function clearConversation() {
+            document.getElementById('chatContainer').innerHTML = '';
+        }
+
+        function logTransaction(prompt, status, txHash, transaction, error, interpretation) {
+            const logContainer = document.getElementById('transactionLog');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${status === 'success' ? 'success' : 'failure'}`;
+            
+            const timestamp = new Date().toLocaleString();
+            const statusText = status === 'success' ? 'PASS' : status === 'failure' ? 'FAIL' : 'ERROR';
+            const statusColor = status === 'success' ? '#10B981' : '#EF4444';
+            
+            let detailsHtml = `
+                <div style="font-size: 0.8rem; color: #6B7280; margin-bottom: 0.5rem;">${timestamp}</div>
+                <div style="font-weight: bold; color: ${statusColor}; margin-bottom: 0.5rem;">
+                    ${statusText} - ${status === 'success' ? 'Correctly interpreted' : status === 'failure' ? 'Misinterpreted' : 'Transaction error'}
+                </div>
+                <div><strong>Prompt:</strong> ${prompt}</div>
+            `;
+            
+            if (interpretation) {
+                const interpretedAddress = interpretation.address ? 
+                    (interpretation.address.slice(0, 6) + '...' + interpretation.address.slice(-4)) : 
+                    'Unknown';
+                detailsHtml += `<div><strong>Agent Interpreted:</strong> ${interpretation.amount || '?'} ETH to ${interpretedAddress}</div>`;
+            }
+            
+            detailsHtml += `<div><strong>Expected:</strong> 0.0001 ETH to 0x0000...0001</div>`;
+            
+            if (txHash) {
+                detailsHtml += `
+                    <div><strong>Tx Hash:</strong> 
+                        <a href="https://sepolia.basescan.org/tx/${txHash}" target="_blank" style="color: #D4AF37;">
+                            ${txHash.slice(0, 10)}...${txHash.slice(-8)}
+                        </a>
+                    </div>
+                `;
+            }
+            
+            if (error) {
+                detailsHtml += `<div style="color: #EF4444;"><strong>Error:</strong> ${error}</div>`;
+            }
+            
+            logEntry.innerHTML = detailsHtml;
+            logContainer.insertBefore(logEntry, logContainer.firstChild);
+            
+            // Keep only last 10 entries
+            while (logContainer.children.length > 10) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('successCount').textContent = testStats.success;
+            document.getElementById('failureCount').textContent = testStats.failure;
+            
+            const successRate = testStats.total > 0 
+                ? Math.round((testStats.success / testStats.total) * 100) 
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            document.getElementById('totalEthBurned').textContent = totalEthBurned.toFixed(4);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html> 
